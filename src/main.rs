@@ -6,9 +6,10 @@ use std::{
 use axum::{
     extract::{Json, State},
     response::IntoResponse,
+    Form,
 };
 use hyper::{Body, Method};
-use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 #[derive(Default)]
 struct AppState {
@@ -56,32 +57,40 @@ async fn root() -> impl IntoResponse {
     "Hello, World!"
 }
 
-#[derive(Deserialize)]
-struct ShortUrlRequest {
+#[derive(serde::Deserialize)]
+struct UrlRequestBody {
     url: String,
 }
 
-#[derive(Serialize)]
-struct ShortUrlResponse {
-    original_url: String,
-    short_url: String,
-}
-
 async fn short_url(
-    State(state): State<SharedState>,
-    Json(body): Json<ShortUrlRequest>,
+    State(shared_state): State<SharedState>,
+    Form(body): Form<UrlRequestBody>,
 ) -> impl IntoResponse {
-    let len = state.read().unwrap().db.len();
-    state
-        .write()
-        .unwrap()
-        .db
-        .insert(len as u32, body.url.clone());
+    let url = body.url;
 
-    Json(ShortUrlResponse {
-        original_url: body.url,
-        short_url: format!("http://localhost:8080/{}", len),
-    })
+    match url.starts_with("http") {
+        true => {
+            let mut state = shared_state.write().unwrap();
+            let id = state.db.len() as u32;
+            state.db.insert(id, url.clone());
+
+            let res = json!({
+                "original_url": url,
+                "short_url": id
+            });
+
+            Json(res)
+        }
+        _ => {
+            let res = json!(
+                {
+                    "error": "invalid url"
+                }
+            );
+
+            Json(res)
+        }
+    }
 }
 
 async fn redirect(
