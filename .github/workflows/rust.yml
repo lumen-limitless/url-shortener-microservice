@@ -53,7 +53,7 @@ jobs:
         run: mkdir app
       # put the app in it
       - name: copy
-        run: mv ./target/release/timestamp-microservice ./app/axum
+        run: mv ./target/release/url-shortener-microservice ./app/axum
 
       # heroku deployment
       - uses: akhileshns/heroku-deploy@v3.12.14
@@ -61,7 +61,7 @@ jobs:
           # key from repository secrets
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           # name of the Heroku app
-          heroku_app_name: 'timestamp-microservice-ll'
+          heroku_app_name: 'url-shortener-ll'
           # email from which the app is uploaded
           heroku_email: ${{secrets.HEROKU_EMAIL}}
 
