@@ -88,7 +88,7 @@ async fn short_url(
                 }
             );
 
-            Err((StatusCode::OK, Json(res)))
+            Ok((StatusCode::OK, Json(res)))
         }
     }
 }
