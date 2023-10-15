@@ -8,7 +8,7 @@ use axum::{
     response::IntoResponse,
     Form,
 };
-use hyper::{Body, Method};
+use hyper::{Body, Method, StatusCode};
 use serde_json::json;
 
 #[derive(Default)]
@@ -65,7 +65,7 @@ struct UrlRequestBody {
 async fn short_url(
     State(shared_state): State<SharedState>,
     Form(body): Form<UrlRequestBody>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let url = body.url;
 
     match url.starts_with("http") {
@@ -79,7 +79,7 @@ async fn short_url(
                 "short_url": id
             });
 
-            Json(res)
+            Ok((StatusCode::OK, Json(res)))
         }
         _ => {
             let res = json!(
@@ -88,7 +88,7 @@ async fn short_url(
                 }
             );
 
-            Json(res)
+            Err((StatusCode::BAD_REQUEST, Json(res)))
         }
     }
 }
@@ -98,10 +98,15 @@ async fn redirect(
     path: axum::extract::Path<u32>,
 ) -> impl IntoResponse {
     let db = &state.read().unwrap().db;
-    let url = db.get(&path.0).unwrap();
-    axum::http::Response::builder()
-        .status(axum::http::StatusCode::FOUND)
-        .header("Location", url)
-        .body(Body::empty())
-        .unwrap()
+    match db.get(&path.0) {
+        Some(url) => axum::http::Response::builder()
+            .status(StatusCode::FOUND)
+            .header("Location", url)
+            .body(Body::empty())
+            .unwrap(),
+        None => axum::http::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::empty())
+            .unwrap(),
+    }
 }
