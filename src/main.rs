@@ -32,7 +32,7 @@ async fn main() {
     // build our application with a route
     let app = axum::Router::new()
         .route("/", axum::routing::get(root))
-        .route("/api/shorturl", axum::routing::post(short_url))
+        .route("/api/shorturl", axum::routing::post(shorten_url))
         .with_state(shared_state.clone())
         .route("/api/shorturl/:id", axum::routing::get(redirect))
         .with_state(shared_state.clone())
@@ -62,7 +62,7 @@ struct UrlRequestBody {
     url: String,
 }
 
-async fn short_url(
+async fn shorten_url(
     State(shared_state): State<SharedState>,
     Form(body): Form<UrlRequestBody>,
 ) -> Result<impl IntoResponse, (axum::http::StatusCode, Json<serde_json::Value>)> {
